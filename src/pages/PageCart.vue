@@ -1,55 +1,32 @@
 <template>
   <div class="basket">
-    <div class="container basket-box">
-      <h2>The basket is empty</h2>
+    <div class="container basket-box" v-if="!cartProducts?.length">
+      <h2>Корзина пуста</h2>
     </div>
 
-    <div class="container">
-      <table class="highlight responsive-table">
-        <thead>
-        <tr>
-          <th>Product name</th>
-          <th>Price</th>
-          <th>Quantity</th>
-          <th>Total price</th>
-          <th>Company name</th>
-          <th>Delete</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td>product_name</td>
-          <td>company_name</td>
-          <td><i class="material-icons">delete</i></td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="container">
+    <div class="container" v-else>
       <div class="row">
-        <div class="calculate">
-          <table class="striped">
+        <div class="col-md-9">
+          <table class="table">
             <thead>
             <tr>
-              <th>Name</th>
-              <th>Quantity</th>
-              <th>Total&nbsp;AMD</th>
+              <th>Продукт</th>
+              <th>Цена</th>
+              <th>Удалить</th>
             </tr>
             </thead>
             <tbody>
-            <tr>
-              <td>product_name</td>
-            </tr>
-            <tr>
-              <td colspan="3" class="right-align">Total:&nbsp;<b>total AMD</b></td>
-            </tr>
-            <tr>
-              <td colspan="3">
-                <button class="buy_btn">Buy</button>
-              </td>
+            <tr v-for="product in cartProducts" :key="product.id">
+              <td>{{ product.name }}</td>
+              <td>{{ product.price }}&nbsp;$</td>
+              <td><i class="bi bi-trash trash__icon" @click="removeFromCart(product.id)"></i></td>
             </tr>
             </tbody>
           </table>
+        </div>
+        <div class="col-md-3">
+          <p><b>Общая сумма:</b> {{ total }}&nbsp;$</p>
+          <button class="buy_btn" @click="BUY_PRODUCTS()">Купить</button>
         </div>
       </div>
     </div>
@@ -57,6 +34,35 @@
 </template>
 
 <script setup lang="ts">
+import {IProduct} from "@/components/ProductList/core/interface";
+import {ref} from "vue";
+import {BUY_PRODUCTS, REMOVE_FROM_CART} from "@/helpers/helpers";
+
+const cart_products = process.env.VUE_APP_LOCALSTORAGE_CART_ITEMS;
+const localStorageItems = localStorage.getItem(cart_products);
+
+const cartProducts = ref<IProduct[]>()
+const total = ref<number>();
+
+if (localStorageItems) {
+  cartProducts.value = JSON.parse(localStorageItems);
+  total.value = calculateTotalPrice();
+}
+
+function removeFromCart(id: number) {
+  if (cartProducts.value) {
+    cartProducts.value = cartProducts.value.filter((product: IProduct) => product.id !== id)
+    REMOVE_FROM_CART(id)
+    total.value = calculateTotalPrice()
+  }
+}
+
+function calculateTotalPrice() {
+  if (cartProducts.value) {
+    return cartProducts.value.reduce((total, product) => total + product.price, 0);
+  }
+}
+
 </script>
 
 <style scoped>
@@ -64,11 +70,6 @@
 .container {
   margin-top: 50px;
 
-}
-
-.calculate {
-  width: 300px;
-  float: right;
 }
 
 i {
@@ -92,21 +93,6 @@ i {
   transition: 0.5s;
 }
 
-.quantity-field {
-  display: flex;
-}
-
-.input-quantity {
-  border: none !important;
-  text-align: center;
-  width: 40% !important;
-}
-
-.quantity-btn {
-  border: none;
-  background: transparent;
-}
-
 .basket-box {
   border: 1px solid #ccc;
   padding: 50px 25px;
@@ -120,5 +106,9 @@ i {
   font-weight: 500;
   font-style: italic;
   letter-spacing: 1px;
+}
+
+.trash__icon {
+  font-size: 20px;
 }
 </style>
